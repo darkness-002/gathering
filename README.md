@@ -1,264 +1,101 @@
-# Gathering - Game8 Honkai Star Rail Web Scraper
+# Gathering
 
-A Python web scraper designed to gather text data from the Honkai Star Rail section of game8.co. This tool crawls through pages, collects text content, and follows internal links to build a comprehensive dataset for AI training purposes.
+Universal provider-based web scraping engine with an interactive Streamlit dashboard.
 
-## What Does This Tool Do?
+Gathering separates crawling from extraction so you can reuse one core engine across many websites.
 
-This scraper automatically:
-1. **Visits web pages** on game8.co related to Honkai Star Rail
-2. **Extracts text content** including character guides, game mechanics, build recommendations, team compositions, and strategy information
-3. **Discovers new pages** by following links within the same section
-4. **Stores all collected data** in a structured JSON format for easy processing and analysis
-5. **Respects the website** by adding delays between requests and identifying itself properly
+## Highlights
 
-The scraped data can be used to train AI models to help players make informed decisions about characters, team compositions, and game strategies.
+- Provider pattern architecture (`BaseScraper` + `ScraperFactory`)
+- Concurrent crawling with configurable batching
+- Requests mode and optional Playwright mode
+- HTML to Markdown normalization
+- Schema-validated page output via Pydantic
+- SQLite persistence for interrupted crawl recovery
+- Streamlit dashboard for analysis and filtering
+- Backward compatibility wrapper for existing `Game8Scraper` usage
 
-## Features
+## Quick Start
 
-- **Intelligent Crawling**: Automatically discovers and follows links within the Honkai Star Rail section
-- **Text Extraction**: Extracts meaningful text content from web pages
-- **Respectful Scraping**: Includes delays between requests and proper user-agent identification
-- **Data Export**: Saves collected data in JSON format for easy processing
-- **Configurable**: Customizable parameters for maximum pages, delays, and starting URLs
+1. Install dependencies:
 
-## How It Works
-
-The scraper operates in several steps:
-
-### 1. Initialization
-- Starts at the specified URL (default: https://game8.co/games/Honkai-Star-Rail)
-- Creates a queue to manage URLs to visit
-- Sets up tracking for already-visited pages to avoid duplicates
-
-### 2. Page Crawling (BFS Algorithm)
-The scraper uses **Breadth-First Search (BFS)** traversal:
-- Takes the next URL from the queue
-- Sends an HTTP request to fetch the page
-- Respects rate limits by waiting (default: 1 second) between requests
-
-### 3. Content Extraction
-For each page visited:
-- **HTML Parsing**: Uses BeautifulSoup to parse the page structure
-- **Content Cleaning**: Removes navigation, scripts, styles, headers, and footers
-- **Text Extraction**: Extracts meaningful text from the main content
-- **Link Discovery**: Finds all links (`<a>` tags) on the page
-
-### 4. Link Filtering
-The scraper validates each discovered link:
-- ✅ Must be from game8.co domain
-- ✅ Must contain "Honkai-Star-Rail" in the path
-- ❌ Skips external sites
-- ❌ Skips non-content URLs (PDFs, images, fragments, JavaScript)
-- ❌ Skips already-visited pages
-
-### 5. Data Storage
-Valid links are added to the queue, and the process repeats until:
-- The maximum page limit is reached (`--max-pages`), OR
-- No more links are in the queue
-
-All scraped data is stored in memory during execution and written to a JSON file at the end.
-
-### 6. Error Handling
-- Network errors are logged and the scraper continues with the next URL
-- Failed pages are recorded with error information
-- The scraper is resilient to individual page failures
-
-### Architecture Diagram
-
-```
-[Start URL] → [URL Queue]
-                  ↓
-          [Fetch Page (with delay)]
-                  ↓
-          [Parse HTML with BeautifulSoup]
-                  ↓
-          [Extract Text & Links]
-                  ↓
-    [Filter Links] → [Add Valid Links to Queue]
-                  ↓
-          [Store Page Data]
-                  ↓
-          [Repeat until done]
-                  ↓
-          [Save JSON File]
-```
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/darkness-002/gathering.git
-cd gathering
-```
-
-2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
-
-### Basic Usage
-
-Run the scraper with default settings:
-```bash
-python main.py
-```
-
-This will:
-- Start from https://game8.co/games/Honkai-Star-Rail
-- Scrape up to 50 pages
-- Use a 1-second delay between requests
-- Save output to `scraped_data.json`
-
-### Advanced Usage
-
-Customize the scraping parameters:
+2. Run a crawl:
 
 ```bash
-python main.py --url "https://game8.co/games/Honkai-Star-Rail" \
-               --max-pages 100 \
-               --delay 2.0 \
-               --output my_data.json
+python main.py --url "https://game8.co/games/Honkai-Star-Rail" --max-pages 25 --concurrency 3 --output scraped_data.json
 ```
 
-#### Parameters:
-
-- `--url`: Starting URL to scrape (default: https://game8.co/games/Honkai-Star-Rail)
-- `--max-pages`: Maximum number of pages to scrape (default: 50)
-- `--delay`: Delay between requests in seconds (default: 1.0)
-- `--output`: Output JSON file path (default: scraped_data.json)
-
-### Using as a Module
-
-You can also use the scraper in your own Python code:
-
-```python
-from scraper import Game8Scraper
-
-# Create scraper instance
-scraper = Game8Scraper(
-    start_url='https://game8.co/games/Honkai-Star-Rail',
-    max_pages=50,
-    delay=1.0
-)
-
-# Run the scraper
-data = scraper.scrape()
-
-# Save to file
-scraper.save_to_json('output.json')
-```
-
-## Output Format
-
-### Where is the Data Stored?
-
-By default, scraped data is saved to a file called **`scraped_data.json`** in the current directory. You can change this location using the `--output` parameter:
+3. Open the dashboard:
 
 ```bash
-python main.py --output /path/to/your/data.json
+streamlit run dashboard.py
 ```
 
-### How is the Data Structured?
+## CLI Usage
 
-The scraper generates a JSON file with the following structure:
-
-```json
-{
-  "metadata": {
-    "start_url": "https://game8.co/games/Honkai-Star-Rail",
-    "pages_scraped": 50,
-    "timestamp": "2024-01-01 12:00:00"
-  },
-  "pages": [
-    {
-      "url": "https://game8.co/games/Honkai-Star-Rail/...",
-      "title": "Page Title",
-      "content": "Extracted text content...",
-      "content_length": 12345,
-      "links_found": 25,
-      "timestamp": "2024-01-01 12:00:01"
-    }
-  ]
-}
+```bash
+python main.py \
+  --url "https://honkai.fandom.com/wiki/Honkai:_Star_Rail_Wiki" \
+  --max-pages 100 \
+  --delay 0.5 \
+  --concurrency 5 \
+  --mode requests \
+  --db-path crawl_data.db \
+  --output scraped_data.json
 ```
 
-### Data Fields Explained
+### CLI Flags
 
-**Metadata Section:**
-- `start_url`: The initial URL where scraping began
-- `pages_scraped`: Total number of pages successfully scraped
-- `timestamp`: When the scraping session completed
+- `--url`: Start URL
+- `--max-pages`: Maximum pages to crawl
+- `--delay`: Delay between request batches (seconds)
+- `--concurrency`: Pages processed concurrently
+- `--mode`: `requests` or `playwright`
+- `--db-path`: SQLite output path
+- `--output`: JSON output path
 
-**Pages Array - Each Page Contains:**
-- `url`: The full URL of the scraped page
-- `title`: The page title (from HTML `<title>` tag)
-- `content`: Extracted text content (cleaned, up to 5000 characters shown)
-- `content_length`: Total character count of the extracted content
-- `links_found`: Number of valid internal links discovered on this page
-- `timestamp`: When this specific page was scraped
+## Dashboard
 
-### Accessing Your Data
+The dashboard (`dashboard.py`) supports:
 
-After scraping, you can process the JSON file:
+- Loading from SQLite (`crawl_data.db`) or JSON (`scraped_data.json`)
+- Filtering by provider, host, status, content length, and title search
+- Summary metrics and distribution charts
+- Per-page inspection (metadata, markdown, extracted text)
+- Export of filtered records
 
-```python
-import json
+## Project Files
 
-# Load the scraped data
-with open('scraped_data.json', 'r', encoding='utf-8') as f:
-    data = json.load(f)
+- `scraper.py`: Core engine, providers, routing, persistence, schema
+- `main.py`: CLI entrypoint
+- `dashboard.py`: Streamlit data explorer
+- `test_scraper.py`: Mocked validation tests
+- `EXAMPLES.md`: Practical run examples
+- `DOCUMENTATION.md`: Full technical documentation
 
-# Access metadata
-print(f"Scraped {data['metadata']['pages_scraped']} pages")
+## Development
 
-# Process each page
-for page in data['pages']:
-    print(f"Title: {page['title']}")
-    print(f"Content: {page['content'][:200]}...")  # First 200 chars
+Run tests:
+
+```bash
+python test_scraper.py
 ```
 
-## Ethical Scraping
+Playwright mode setup (optional):
 
-This tool is designed for educational and research purposes. It follows best practices for web scraping:
+```bash
+pip install playwright
+playwright install
+```
 
-- **Respectful delays**: Default 1-second delay between requests to avoid overloading servers
-- **User-agent identification**: Clearly identifies itself as a scraper
-- **Scope limitation**: Only scrapes the Honkai Star Rail section of game8.co
-- **Terms of Service**: The website's ToS has been reviewed and allows scraping
+## Documentation
 
-## Use Case
+See full docs in `DOCUMENTATION.md`.
 
-This scraper is intended to gather data for training AI tools that can help players with:
-- Character selection and building
-- Team composition recommendations
-- Game progression guidance
-- Strategy optimization
+## Ethical Use
 
-## Requirements
-
-To use this scraper, you need:
-
-### System Requirements
-- **Python 3.7 or higher** - The programming language used
-- **Internet connection** - To access game8.co
-- **At least 50MB free disk space** - For storing scraped data
-
-### Python Dependencies
-Install these using `pip install -r requirements.txt`:
-- **requests** (>=2.31.0) - For making HTTP requests to web pages
-- **beautifulsoup4** (>=4.12.0) - For parsing HTML and extracting content
-- **lxml** (>=4.9.0) - Fast HTML/XML parser used by BeautifulSoup
-
-## License
-
-This project is provided as-is for educational purposes.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Disclaimer
-
-Users are responsible for ensuring their use of this tool complies with all applicable laws and the website's terms of service. This tool should be used responsibly and ethically.
+Use responsibly and comply with target website terms and robots policies.

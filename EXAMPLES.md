@@ -1,120 +1,85 @@
 # Example Usage
 
-This file contains examples of how to use the Game8 Honkai Star Rail scraper.
+This file contains practical examples for the universal provider-based scraper.
 
 ## Quick Start
 
-### 1. Install Dependencies
+Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Run with Default Settings
+Run with defaults:
+
 ```bash
-python main.py
+python main.py --url "https://game8.co/games/Honkai-Star-Rail"
 ```
 
-This will scrape up to 50 pages starting from https://game8.co/games/Honkai-Star-Rail
+## CLI Examples
 
-## Advanced Examples
+Scrape more pages with moderate concurrency:
 
-### Scrape More Pages
 ```bash
-python main.py --max-pages 100
+python main.py --url "https://game8.co/games/Honkai-Star-Rail" --max-pages 200 --concurrency 5 --delay 0.5
 ```
 
-### Custom Output File
+Use persistence and custom output:
+
 ```bash
-python main.py --output honkai_data.json
+python main.py --url "https://honkai.fandom.com/wiki/Honkai:_Star_Rail_Wiki" --db-path fandom.db --output fandom.json
 ```
 
-### Slower Rate (More Respectful)
-```bash
-python main.py --delay 2.0
-```
+Enable JS rendering for dynamic pages:
 
-### Combined Options
 ```bash
-python main.py --max-pages 200 --delay 1.5 --output full_scrape.json
+python main.py --url "https://example.com/news" --mode playwright --max-pages 30
 ```
 
 ## Using as a Library
 
 ```python
-from scraper import Game8Scraper
+from scraper import UniversalCrawler
 
-# Create scraper
-scraper = Game8Scraper(
-    start_url='https://game8.co/games/Honkai-Star-Rail',
-    max_pages=50,
-    delay=1.0
+crawler = UniversalCrawler(
+    start_url="https://game8.co/games/Honkai-Star-Rail",
+    max_pages=25,
+    delay=1.0,
+    concurrency=3,
+    fetch_mode="requests",
+    db_path="crawl_data.db",
 )
 
-# Scrape data
-data = scraper.scrape()
+pages = crawler.scrape()
+crawler.save_to_json("output.json")
 
-# Access scraped data
-for page in data:
-    print(f"Title: {page['title']}")
-    print(f"Content length: {page['content_length']}")
-    print(f"Links found: {page['links_found']}")
-    print("---")
-
-# Save to file
-scraper.save_to_json('output.json')
+for page in pages:
+    print(page["provider"], page["title"], page["links_found"])
 ```
 
-## Processing the Output
-
-The scraper creates a JSON file with this structure:
+Backward-compatible wrapper:
 
 ```python
-import json
+from scraper import Game8Scraper
 
-# Load scraped data
-with open('scraped_data.json', 'r') as f:
-    data = json.load(f)
+scraper = Game8Scraper(
+    start_url="https://game8.co/games/Honkai-Star-Rail",
+    max_pages=10,
+    delay=0.5,
+)
 
-# Get metadata
-print(f"Scraped {data['metadata']['pages_scraped']} pages")
-print(f"Started from: {data['metadata']['start_url']}")
-
-# Process pages
-for page in data['pages']:
-    if 'error' not in page:
-        print(f"\nPage: {page['title']}")
-        print(f"URL: {page['url']}")
-        print(f"Content preview: {page['content'][:200]}...")
+data = scraper.scrape()
+scraper.save_to_json("game8.json")
 ```
 
-## Testing
-
-Run the test suite to verify functionality:
+## Running Tests
 
 ```bash
 python test_scraper.py
 ```
 
-This runs the scraper with mock data to verify all components work correctly.
+## Run Dashboard
 
-## Tips
-
-1. **Start Small**: Test with `--max-pages 10` first to ensure everything works
-2. **Be Respectful**: Use appropriate delays (1-2 seconds minimum)
-3. **Monitor Progress**: Watch the console output to see scraping progress
-4. **Check Output**: Verify the JSON file after scraping completes
-5. **Filter Data**: Process the JSON to extract specific information you need
-
-## Common Use Cases
-
-### Scrape Character Information
-The scraper will automatically find and follow links to character pages.
-
-### Collect Build Guides
-Guide pages are discovered and scraped automatically.
-
-### Gather Team Compositions
-Team composition information is extracted from relevant pages.
-
-### Extract Item Database
-Item and equipment information is collected from database pages.
+```bash
+streamlit run dashboard.py
+```
